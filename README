@@ -1,0 +1,135 @@
+Acme-GolfScript v0.01
+---------------------
+
+Acme::GolfScript is a Pure Perl implementation of the
+GolfScript programming language. GolfScript is a stack
+oriented esoteric language aimed at solving problems
+with short programs. The original GolfScript implementation
+was by Darren Smith in the Ruby programming language.
+More information about the GolfScript language and its
+Ruby implementation are available at
+
+    http://www.golfscript.com/golfscript/
+
+The  Acme::GolfScript  package contains the full
+GolfScript implementation. This module also installs
+a package simply called  G  which can wrap a source
+code file into the  Acme::GolfScript  parser.
+This will allow you to evaluate GolfScript code
+from the command line. That is,
+
+    perl -MG my_golfscript_file.gs
+
+should produce the same output as
+
+    ruby golfscript.rb my_golfscript_file.gs
+
+except it is 10 fewer characters!
+
+
+DEBUGGING GOLFSCRIPT
+
+The  Acme::GolfScript  language has logging facilities to
+show you what the GolfScript interpreter is doing and to
+help test and debug your GolfScript code. To use debugging,
+pass the "debug" or "verbose" parameters to either the
+Acme::GolfScript  or  G  modules:
+
+    $ perl -MG -e "4 3+"
+    7
+
+    $ perl -MG=debug -e "4 3+"
+    Stack initialized:
+    Evaluating: 4 3+
+    
+        Parsing: "4"
+    push [1]: 4
+        Parsing: " "
+        Parsing: "3"
+    push [2]: 3
+        Parsing: "+"
+    pop [2]: 3
+    pop [1]: 4
+    push [1]: 7
+        Parsing: "
+    "
+    7
+
+    $ perl -MG=verbose "4 3+"
+    Stack initialized:
+    Evaluating: 4 3+
+    
+        Parsing: "4"
+    push [1]: 4
+    
+    STACK[0]: ""
+    STACK[1]: 4
+    
+        Parsing: " "
+        Parsing: "3"
+    push [2]: 3
+    
+    STACK[0]: ""
+    STACK[1]: 4
+    STACK[2]: 3
+    
+        Parsing: "+"
+    pop [2]: 3
+    
+    STACK[0]: ""
+    STACK[1]: 4
+    
+    pop [1]: 4
+    
+    STACK[0]: ""
+    
+    push [1]: 7
+    
+    STACK[0]: ""
+    STACK[1]: 7
+    
+        Parsing: "
+    "
+    7
+
+INSTALLATION
+
+To install this module, run the following commands:
+
+	perl Makefile.PL
+	make
+	make test
+	make install
+
+SUPPORT AND DOCUMENTATION
+
+After installing, you can find documentation for this module with the
+perldoc command.
+
+    perldoc Acme::GolfScript
+
+You can also look for information at:
+
+    RT, CPAN's request tracker
+        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Acme-GolfScript
+
+    AnnoCPAN, Annotated CPAN documentation
+        http://annocpan.org/dist/Acme-GolfScript
+
+    CPAN Ratings
+        http://cpanratings.perl.org/d/Acme-GolfScript
+
+    Search CPAN
+        http://search.cpan.org/dist/Acme-GolfScript/
+
+
+LICENSE AND COPYRIGHT
+
+Copyright (C) 2010 Marty O'Brien
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of either: the GNU General Public License as published
+by the Free Software Foundation; or the Artistic License.
+
+See http://dev.perl.org/licenses/ for more information.
+

@@ -1,0 +1,249 @@
+=head1 NAME
+
+Language::GolfScript - Perl implementation of GolfScript 
+
+=head1 VERSION
+
+Version 0.01
+
+=head1 SYNOPSIS
+
+    # 1000 digits of PI, see http://golfscript.com/golfscript/examples.html
+    use Language::GolfScript;
+    Language::GolfScript::run(q#;''
+    6666,-2%{2+.2/@*\/10.3??2*+}*#);
+
+    # command-line. Say ...
+    $ perl -MG myscript.gs
+    # ... instead of ...
+    $ ruby golfscript.rb myscript.gs
+    # look! you already saved 10 keystrokes!
+
+    # one-liner to compute pow(4,24)
+    $ perl -MG -e '4 24?'
+    281474976710656
+
+=head1 DESCRIPTION
+
+(From L<http://www.golfscript.com/golfscript/index.html>)
+
+GolfScript is a stack oriented esoteric programming language
+aimed at solving problems (B<holes>) in as few keyB<strokes>
+as possible. It also aims to be simple and easy to write.
+
+Short code is achieved by using single symbols to represent 
+high level operations (such as map, join, array size, etc). 
+Being stack based allows for functions and other manipulations 
+to work without the need for explicit variables, however 
+variables still exist and are useful for more complicated 
+stack manipulations.
+
+More details about GolfScript, including documentation,
+a tutorial, and examples are available at the home page
+
+    http://www.golfscript.com/golfscript/
+
+The C<Language::GolfScript> module is a Perl implementation 
+of the GolfScript spec, which was originally written in Ruby.
+It includes the C<G> package, which simply wraps a source
+filter around C<Language::GolfScript> and allows a GolfScript
+source file to be executed from the command line.
+
+The current implementation is ~1800 lines and is still missing
+a few features. But I'm going to see if I can get it even lower! ;-)
+
+=head1 FUNCTIONS
+
+Mainly the C<G> package uses source filtering to automatically
+parse and execute the contents of a source file as GolfScript.
+But it makes use of the following functions in the
+C<Language::GolfScript> module, which may also be
+called independently (to debug or to try several test cases,
+for example).
+
+=head2 Execution methods
+
+=over 4
+
+=item C< Language::GolfScript::run($source_string) >
+
+Initializes the GolfScript interpreter, executes the specified
+string of GolfScript code, and prints
+the resulting stack to standard output.
+
+=item C< Language::GolfScript::test($source_string [, $input) >
+
+Initializes the stack to the specified input, executes the
+specified string of GolfScript code, and returns a string
+represnting the output of the GolfScript program.
+
+=item C< Language::GolfScript::evaluate($source_string) >
+
+Evaluates a string of GolfScript code with respect
+to the current stack. May change the stack depending
+on the code that was executed.
+
+=cut
+
+To document:   gspush, gspop, gsoutput
+
+gspush to_string($string);
+gspush to_block($golfscript_block);
+gspush to_number($number);
+gspush [ to_<type>($element1), to_<type>($element2), ... ];
+
+$element = gspop();
+if (is_string($element)) { $string = get_string($element) }
+elsif (is_block($element)) { $block = get_block($element) }
+elsif (is_number($element)) { $number = get_number($element) }
+elsif (is_array($element)) { @array = @$element }
+
+=back
+
+=head1 VARIABLES
+
+=over 4
+
+=item C<Language::GolfScript::INPUT>
+
+Input to the GolfScript program. When the module is first loaded,
+this variable is initialized from standard input and the stack
+is set to contain a single string containing this input.
+
+=item C<Language::GolfScript::DEBUG>
+
+If set to one, this module will write many details about
+the operations being performed to standard error.
+
+If set to a value greater than one, this module will write
+even more details about operation of the GolfScript parser.
+
+Any of these constructions
+
+    use Language::GolfScript 'debug';
+    use G 'debug';
+    $ perl -MG=debug myscript.gs
+
+will initialize C<Language::GolfScript::DEBUG> to C<1>. Using the
+word C<verbose> instead of C<debug> will initialize
+C<Language::GolfScript::DEBUG> to 2.
+
+
+=item C<Language::GolfScript::COUNT>
+
+If set to non-zero, reports the character count to
+standard output after the script is evaluated.
+
+This variable may be initialized to 1 by passing the word
+C<count> to the module's import function, for example like
+
+    use Language::GolfScript 'count'
+    $ perl -MG=debug,count myscript.gs
+
+=item C<Language::GolfScript::TIMEOUT>
+
+If non-zero, terminates the program after the specified
+number of seconds. Helpful if your GolfScript code might
+enter an infinite loop.
+
+This variable can be initialized by passing the word
+C<timeout> to the module's import function.
+
+    use Language::GolfScript timeout => 60;
+    $ perl -MG=timeout=10 myscript.gs
+
+=back
+
+=head1 EXPORTS
+
+None
+
+=head1 DISCREPANCIES BETWEEN RUBY/PERL GOLFSCRIPT IMPLEMENTATIONS
+
+While much effort has been devoted to getting the Perl implementation
+of GolfScript to conform to the specification and to be consistent
+with the Ruby implementation, there are a few differences.
+
+=over 4
+
+=item Perl implementation is not complete
+
+Every effort has been made to get the specific examples
+on the GolfScript Builtins page 
+L<http://golfscript.com/golfscript/builtin.html> to work.
+But the implementation may have neglected some
+infrequently used operations that are valid GolfScript
+syntax (say, the C<)> operating on a block). 
+Feel free to bring these edge cases to
+my attention with CPAN's Request Tracker (see
+L<"SUPPORT AND DOCUMENTATION">, below).
+
+=item Perl GolfScript is slow
+
+Supposedly, Ruby is slow and the Ruby GolfScript implementation
+is even L<slower|http://www.golfscript.com/golfscript/syntax.html>.
+Well, Perl GolfScript is slower still, for a variety of reasons.
+
+If biginteger operations are particularly painful on your script,
+consider installing C<libgmp> (L<http://gmplib.org/>) on your
+system along with the L<Math::BigInt::GMP> package.
+
+=item Interpolated string parsing
+
+Ruby's string parsing function allows arbitrary Ruby expressions
+to be included in strings with the C<#{ruby expression}> syntax.
+This functionality is also exported to Ruby GolfScript:
+
+    "The time is now #{Time.now}"
+
+In Perl's GolfScript, the best we can easily do is to evaluate
+this syntax as a Perl expression with Perl's C<eval> function.
+So an equivalent Perl GolfScript code snippet would be
+
+    "The time is now #{scalar localtime}"
+
+=item Error messages
+
+Illegal operations in GolfScript generate a stack trace.
+The Ruby and Perl GolfScript stack traces will necessarily
+look different for the same error.
+
+=back
+
+=head1 SUPPORT AND DOCUMENTATION
+
+After installing, you can find documentation for this module with the
+perldoc command.
+
+    perldoc Language::GolfScript
+
+You can also look for information at:
+
+    RT, CPAN's request tracker
+        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Language-GolfScript
+
+    AnnoCPAN, Annotated CPAN documentation
+        http://annocpan.org/dist/Language-GolfScript
+
+    CPAN Ratings
+        http://cpanratings.perl.org/d/Language-GolfScript
+
+    Search CPAN
+        http://search.cpan.org/dist/Language-GolfScript/
+
+=head1 AUTHOR
+
+Specification and original Ruby implementation by Darren Smith.
+
+Perl implementation by Marty O'Brien, E<lt>mob@cpan.orgE<gt>.
+
+=head1 COPYRIGHT
+
+Copyright (c) 2010, Marty O'Brien
+
+This library is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself, either Perl
+version 5.12.0 or, at your option, any later version of
+Perl 5.
+
+=cut

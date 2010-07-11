@@ -1,0 +1,18 @@
+Changes
+MANIFEST
+Makefile.PL
+README
+lib/Language/GolfScript.pm
+lib/Language/GolfScript.pod
+lib/G.pm
+t/00-load.t
+t/golfscript.t
+t/xor.t
+t/assign.t
+t/unfold.t
+golfscripts/array.gs
+golfscripts/gcd.gs
+golfscripts/gcd2.gs
+golfscripts/grid.gs
+golfscripts/pi.gs
+META.yml                                 Module meta-data (added by MakeMaker)
