@@ -15,7 +15,14 @@ sub bigi::neg { $_[0] * -1 }
 sub bigi::pow { $_[0] ** $_[1] }
 sub bigi::cmp { $_[0] <=> $_[1] }
 
-use bigint try => 'GMP';
+BEGIN {
+  require bigint;
+  eval { bigint->import('try','GMP') };
+  if ($@) {
+    bigint->import();
+  }
+}
+
 package Language::GolfScript;
 
 use Carp;
@@ -23,7 +30,7 @@ use warnings;
 use strict;
 use vars qw(@STACK @LB %DISPATCH);
 
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 our $DEBUG = $ENV{G_DEBUG};
 our $INPUT = '__NOT_INITIALIZED__';
 our $COUNT = 0;
@@ -101,7 +108,7 @@ sub gspush {
   }
   foreach (@_) {
     if ($DEBUG) {
-      print STDERR "push [", scalar @STACK, "]: $_\n";
+      print STDERR "push [", scalar @STACK, "]: ", display_element($_), "\n";
     }
     push @STACK, $_;
   }
@@ -118,7 +125,7 @@ sub gspop {
   if ($sz > 0) {
     my $elem = pop @STACK;
     if ($DEBUG) {
-      print STDERR "pop [", scalar @STACK, "]: $elem\n";
+      print STDERR "pop [", scalar @STACK, "]: ", display_element($elem),"\n";
     }
     display_stack() if $DEBUG > 1;
     return $elem;
@@ -130,7 +137,11 @@ sub gspop {
 
 sub gscroak {
   display_stack() if $DEBUG;
-  croak @_;
+  if ($DEBUG) {
+    Carp::confess(@_);
+  } else {
+    croak @_;
+  }
 }
 
 sub ___ {
@@ -275,13 +286,14 @@ sub gsoutput {
     } elsif (is_string($elem)) {
       print STDOUT get_string($elem);
     } elsif (is_block($elem)) {
-      print STDOUT get_block($elem);
+      print STDOUT "{" . get_block($elem) . "}";
     } else {
       print STDOUT get_number($elem);
     }
   }
 }
 
+# evaluate a block of GolfScript
 sub evaluate {
   my $input = shift;
   my (@block_stack, $active_block) = ();
@@ -305,7 +317,7 @@ sub evaluate {
       my $finished_block = $active_block;
       $active_block = pop @block_stack;
       if (defined $active_block) {
-	$active_block .= $finished_block . "}";
+	$active_block .= "{" . $finished_block . "}";
       } else {
 	gspush to_block($finished_block);
       }
@@ -314,7 +326,9 @@ sub evaluate {
 	push @block_stack, $active_block;
       }
       $active_block = "";
-    } elsif ($token eq ':') {
+    } elsif (defined $active_block) {
+      $active_block .= $token;
+    } elsif ($token eq ':') {  # assign.
       my $var_name = shift @tokens;
       my $element = $STACK[-1];
       if ($DEBUG) {
@@ -327,8 +341,6 @@ sub evaluate {
       } else {
 	$DISPATCH{$var_name} = sub { gspush $element };
       }
-    } elsif (defined $active_block) {
-      $active_block .= $token;
     } elsif (defined $DISPATCH{$token}) {
       $DISPATCH{$token}->();
     } else {
@@ -738,8 +750,8 @@ sub slash_operator {
       gspush [ @c ];
     } elsif (is_block($b)) {  # BLOCK-STRING SPLIT
       &___
-    } elsif (is_number($a)) {                  # COERCE INT TO STRING AND SPLIT
-      $a = get_number($a);
+    } elsif (is_number($b)) {                  # COERCE INT TO STRING AND SPLIT
+      $b = get_number($b);
       my @c = map { to_string($_) } split $a, $b;
       gspush [ @c ];
     }
@@ -786,8 +798,19 @@ sub slash_operator {
       gspush [ @d ];
     } elsif (is_block($b)) {
       &___;
-    } elsif (is_string($b)) {
-      &___;
+    } elsif (is_string($b)) {     # ARRAY OF SUBDIVIDED STRINGS
+      $b = get_string($b);
+      $a = get_number($a);
+      if ($a <= 0) { gscroak "negative argument to {string number /}" }
+      my @d = ();
+      while (length $b > $a) {
+	push @d, to_string(substr($b,0,$a));
+	$b = substr($b,$a);
+      }
+      if (length $b > 0) {
+	push @d, to_string($b);
+      }
+      gspush [ @d ];
     } elsif (is_number($b)) {
       my $d = bigi::div(get_number($b),get_number($a));
       gspush to_number($d);
@@ -1026,6 +1049,9 @@ sub greater_than_operator {
 sub equal_operator {
   my $a = gspop();
   my $b = gspop();
+
+  if (is_number($b) && !is_number($a)) { ($a,$b)=($b,$a) } # XXX "order"
+
   if (is_string($a)) {
     $a = [ _coerce_string_to_array( get_string($a) ) ];
   }
@@ -1036,15 +1062,17 @@ sub equal_operator {
     gspush _element_compare($a,$b) == 0 ? to_number(1) : to_number(0);
   } elsif (is_block($a)) {
     &___
-  } elsif (is_array($b)) {            # SELECT GT
+  } elsif (is_number($a)) {
     $a = get_number($a);
-    $a += scalar @$b if $a < 0;
-    gspush $b->[$a];
-  } elsif (is_string($b) || is_block($b)) {
-    $b = [ _coerce_string_to_array( get_string($b) ) ];
-    gspush $b->[get_number($a)];
-  } elsif (is_number($b)) {
-    gspush _element_compare($a,$b) == 0 ? to_number(1) : to_number(0);
+    if (is_array($b)) {            # SELECT GT
+      $a += scalar @$b if $a < 0;
+      gspush $b->[$a];
+    } elsif (is_string($b) || is_block($b)) {
+      $b = [ _coerce_string_to_array( get_string($b) ) ];
+      gspush $b->[$a];
+    } elsif (is_number($b)) {
+      gspush _element_compare($a,$b) == 0 ? to_number(1) : to_number(0);
+    }
   }
 }
 
@@ -1356,10 +1384,18 @@ sub zip_function {
 
 sub base_function {
   my $base = gspop();
-  if (!is_number($base)) {
+  if (is_string($base)) {
+    my $c = get_string($base);
+    if (length $c > 1) {
+      &___;
+    }
+    $base = ord $c;
+    if ($DEBUG) { print STDERR "base_function: treating '$c' as base $base\n"; }
+  } elsif (is_number($base)) {
+    $base = get_number($base);
+  } else {
     &___;
   }
-  $base = get_number($base);
   my $operand = gspop();
   if (is_array($operand)) {
     my $value = 0;
@@ -1368,7 +1404,14 @@ sub base_function {
       $value = bigi::add($value,get_number($elem));
     }
     gspush to_number($value);
-  } elsif (is_block($operand) || is_string($operand)) {
+  } elsif (is_string($operand)) {
+    my $value = 0;
+    foreach my $elem (_coerce_string_to_array(get_string($operand))) {
+      $value = bigi::mult($value,$base);
+      $value = bigi::add($value, get_number($elem));
+    }
+    gspush to_number($value);
+  } elsif (is_block($operand)) {
     &___;
   } elsif (is_number($operand)) {
     $operand = get_number($operand);

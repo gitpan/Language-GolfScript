@@ -1,5 +1,9 @@
-Revision history for Acme-GolfScript
+Revision history for Language-GolfScript
 
-0.01    2010-06-25
+0.01    2010-07-12
         First version, released on an unsuspecting world.
 
+0.02    2010-07-14
+        Trap error for systems that don't support 'use bigint try=> ...'.
+	Bug fixes for nested blocks. Implemented a few more unimplemented
+        functions.

@@ -1,7 +1,7 @@
-Acme-GolfScript v0.01
----------------------
+Language-GolfScript v0.02
+-------------------------
 
-Acme::GolfScript is a Pure Perl implementation of the
+Language::GolfScript is a Pure Perl implementation of the
 GolfScript programming language. GolfScript is a stack
 oriented esoteric language aimed at solving problems
 with short programs. The original GolfScript implementation
@@ -11,10 +11,10 @@ Ruby implementation are available at
 
     http://www.golfscript.com/golfscript/
 
-The  Acme::GolfScript  package contains the full
+The  Language::GolfScript  package contains the full
 GolfScript implementation. This module also installs
 a package simply called  G  which can wrap a source
-code file into the  Acme::GolfScript  parser.
+code file into the  Language::GolfScript  parser.
 This will allow you to evaluate GolfScript code
 from the command line. That is,
 
@@ -29,11 +29,11 @@ except it is 10 fewer characters!
 
 DEBUGGING GOLFSCRIPT
 
-The  Acme::GolfScript  language has logging facilities to
+The  Language::GolfScript  language has logging facilities to
 show you what the GolfScript interpreter is doing and to
 help test and debug your GolfScript code. To use debugging,
 pass the "debug" or "verbose" parameters to either the
-Acme::GolfScript  or  G  modules:
+Language::GolfScript  or  G  modules:
 
     $ perl -MG -e "4 3+"
     7
@@ -106,21 +106,21 @@ SUPPORT AND DOCUMENTATION
 After installing, you can find documentation for this module with the
 perldoc command.
 
-    perldoc Acme::GolfScript
+    perldoc Language::GolfScript
 
 You can also look for information at:
 
     RT, CPAN's request tracker
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Acme-GolfScript
+        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Language-GolfScript
 
     AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/Acme-GolfScript
+        http://annocpan.org/dist/Language-GolfScript
 
     CPAN Ratings
-        http://cpanratings.perl.org/d/Acme-GolfScript
+        http://cpanratings.perl.org/d/Language-GolfScript
 
     Search CPAN
-        http://search.cpan.org/dist/Acme-GolfScript/
+        http://search.cpan.org/dist/Language-GolfScript/
 
 
 LICENSE AND COPYRIGHT

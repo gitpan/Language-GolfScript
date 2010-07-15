@@ -1,5 +1,5 @@
 use Language::GolfScript;
-use Test::More tests => 184;
+use Test::More tests => 186;
 use strict;
 use warnings;
 use Carp;
@@ -265,7 +265,9 @@ test("{qwerty}-3>", "{rty}", "> select neg");
 test("4 5=", "0", "= number equality");
 test("75 50 25+=", "1", "= number equality");
 test("[2 4 8 16 32]3=", "16", "= array element");
+test("3[2 4 8 16 32]=", "16", "= array element");
 test("'chocolate'5=", ord("l"), "= string element");
+test("5'chocolate'=", ord("l"), "= string element");
 test("[2 4 8 10 12]-2=", "10", "= array neg element");
 
 

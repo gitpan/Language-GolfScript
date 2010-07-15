@@ -4,7 +4,7 @@ G - source filter for Language::GolfScript module
 
 =head1 VERSION
 
-0.01
+0.02
 
 =head1 SYNOPSIS
 
