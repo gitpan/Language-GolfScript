@@ -1,0 +1,9 @@
+<TestCase>
+<!-- http://stackoverflow.com/questions/2983161/code-golf-diamond-pattern/2984300#2984300  -->
+<code>~\:b;\:a,{[.a-~" "*'/'@' '*.'\\'4$]b*}%n*.-1%](*n*</code>
+<Inputs>
+<input>1 6 2</input>
+<input>2 2 2</input>
+<input>4 3 1</input>
+</Inputs>
+</TestCase>

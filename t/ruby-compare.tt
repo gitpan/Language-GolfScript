@@ -1,0 +1,128 @@
+use Test::More tests => 9;
+use XML::XPath;
+use lib qw(blib/lib);
+use strict;
+use warnings;
+use vars qw($ruby $golfscript_rb);
+
+# does Perl GolfScript and Ruby GolfScript
+# produce the same results? 
+
+# This test requires a ruby interpreter
+# and the Ruby GolfScript implementation
+# script.
+#
+# set  RUBY_EXE  and  GOLFSCRIPT_RB  environment
+# variables to help this script locate
+# those files.
+#
+
+
+$ruby = find_ruby_interpreter();
+$golfscript_rb = find_ruby_golfscript_interpreter();
+if (!defined($ruby) || !defined($golfscript_rb)) {
+  if (!defined $ruby) {
+  SKIP: {
+      skip "Can't find ruby interpreter. Set RUBY_EXE env var.", 6;
+    }
+    exit 0;
+  }
+  if (!defined $golfscript_rb) {
+  SKIP: {
+      skip "Can't find golfscript.rb. Set GOLFSCRIPT_RB env var.", 6;
+    }
+    exit 0;
+  }
+}
+
+
+# most test cases come from stackoverflow.com
+# code-golf contents.
+
+&run_test_case("t/tests/diamondblackjack.xml");
+&run_test_case("t/tests/pi1000.xml");
+&run_test_case("t/tests/triforce.xml");
+&run_test_case("t/tests/piglatin.xml");
+&run_test_case("t/tests/4-is-magic.xml");
+&run_test_case("t/tests/make-diamonds.xml");
+&run_test_case("t/tests/make-diamonds2.xml");
+&run_test_case("t/tests/piano.xml");
+&run_test_case("t/tests/digitalclock.xml");
+
+
+sub run_test_case {
+  my ($test_case) = @_;
+  my $ok = 1;
+
+  my $xp = XML::XPath->new(filename => $test_case);
+  my $code = $xp->getNodeText('/TestCase/code');
+  my @inputs = $xp->findnodes('/TestCase/Inputs/input');
+
+  open C, '>', 'test.gs';
+  print C $code;
+  close C;
+
+  if (@inputs == 0) {
+    @inputs = ("");
+  }
+
+  my $num_inputs = scalar @inputs;
+  foreach my $input (@inputs) {
+    if (ref $input eq 'XML::XPath::Node::Element') {
+      $input = $input->getChildNode(1)->toString();
+    }
+
+    open INPUT, '>', 'test.input';
+    print INPUT $input;
+    close INPUT;
+
+    my $perl_output = qx($^X -Iblib/lib -MCarp::Always -MG=timeout,60 test.gs < test.input);
+    my $ruby_output = qx($ruby $golfscript_rb test.gs < test.input);
+
+    if ($ENV{DEBUG}) {
+      if ($perl_output eq $ruby_output) {
+	print "$test_case: success for input $input\n";
+	print "Output:\n$perl_output\n\n";
+      } else {
+	print "$test_case: failure for input $input\n";
+	print "Perl output:\n$perl_output\n\n";
+	print "Ruby output:\n$ruby_output\n\n";
+	$ok = 0;
+      }
+    }
+
+    unlink "test.pl.out", "test.rb.out", "test.input";
+  }
+  unlink "test.gs";
+  ok($ok, "perl/ruby direct comparison for $test_case");
+}
+
+
+sub find_ruby_interpreter {
+
+  # is ruby already on the path?
+  open(T, '>', 'temp.rb');
+  print T "puts\"Hello world\"";
+  close T;
+
+  my $c1 = system("ruby","temp.rb");
+  unlink 'temp.rb';
+  if ($c1 == 0) {
+    return "ruby";
+  }
+
+  if (defined $ENV{RUBY_EXE}) {
+    return $ENV{RUBY_EXE};
+  }
+
+  return;
+}
+
+sub find_ruby_golfscript_interpreter {
+  if (defined $ENV{GOLFSCRIPT_RB}) {
+    return $ENV{GOLFSCRIPT_RB};
+  }
+  return;
+}
+
+

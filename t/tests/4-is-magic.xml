@@ -1,0 +1,12 @@
+<TestCase>
+<!-- http://stackoverflow.com/questions/3230978/code-golf-four-is-magic/3233424#3233424 -->
+<code>{n+~."+#,#6$DWOXB79Bd")base`1/10/~{~2${~1$+}%(;+~}%++=" is "\".
+"1$4$4-}do;;;"magic."</code>
+<Inputs>
+<input>77</input>
+<input>40</input>
+<input>25</input>
+<input>0</input>
+<input>4</input>
+</Inputs>
+</TestCase>

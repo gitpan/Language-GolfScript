@@ -1,5 +1,5 @@
 use Language::GolfScript;
-use Test::More tests => 186;
+use Test::More tests => 190;
 use strict;
 use warnings;
 use Carp;
@@ -297,16 +297,20 @@ test("[1 2 3 4 5 6]{2?20>}?", "5", "?? exponentiation,find first condition");
 
 
 #   (((
-test("7(", "8", "( increment number");
-test("-1(", "0", "( increment number");
+test("1(", "0", "( decrement number");
+test("4.*(", "15", "( decrement number");
 test("[1 2 3](", "[ 2 3 ]1", "( uncons left");
+test("'D'(", "\"\"68", "( uncons left string like ord");
+test("'toy'(", "\"oy\"116", "( uncons left string");
+
 
 
 #   )))
-test("1)", "0", ") decrement number");
-test("4.*)", "15", ") decrement number");
+test("7)", "8", ") increment number");
+test("-1)", "0", ") increment number");
 test("[7 8 9])", "[ 7 8 ]9", ") uncons right");
-
+test("['asdf'])","[ ]\"asdf\"", ") uncons right");
+test("'asdf')", "\"asd\"102", ") uncons right string");
 
 
 #   and or xor

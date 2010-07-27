@@ -1,4 +1,4 @@
-Language-GolfScript v0.02
+Language-GolfScript v0.03
 -------------------------
 
 Language::GolfScript is a Pure Perl implementation of the
@@ -24,7 +24,7 @@ should produce the same output as
 
     ruby golfscript.rb my_golfscript_file.gs
 
-except it is 10 fewer characters!
+except it takes 10 fewer characters!
 
 
 DEBUGGING GOLFSCRIPT
@@ -100,6 +100,16 @@ To install this module, run the following commands:
 	make
 	make test
 	make install
+
+If your system has a ruby interpreter and a copy of the ruby
+GolfScript implementation (available at
+http://www.golfscript.com/golfscript/golfscript.rb), there is
+an additional test you can perform that explicitly compares the
+Perl and Ruby GolfScript implementations against some sample
+GolfScript codes). Run
+
+        GOLFSCRIPT_RB=/path/to/golfscript.rb perl t/ruby-compare.tt
+
 
 SUPPORT AND DOCUMENTATION
 

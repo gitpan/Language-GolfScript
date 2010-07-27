@@ -1,0 +1,10 @@
+<TestCase>
+<!-- http://stackoverflow.com/questions/1843182/code-golf-diamond-blackjack/1855112#1855112 -->
+<code>' ':x/{~}%:h;9,{:r;h,2\?,{:m;h,,{2\?m&amp;},{h\=}%}%1&gt;{:j[{+}*.22&lt;\j,j$j]}$)\;{:c;[x]3,{4\?'  \//\__'2/[11'?'*8'@'*'bb@BBbbbbbQY@AAQQQYYbfH@H@HbffYQD@D@DQQYfb@``bbbbfQY@PPQQQQQbf'8'?'*]']]'+10r*c+=@/3&amp;=}%[x]++' _'1/7r&amp;!=*}%'|':x;n}%
+</code>
+<Inputs>
+<input>10 9 8 7 6 5</input>
+<input>1 2 4 8</input>
+<input>3</input>
+</Inputs>
+</TestCase>

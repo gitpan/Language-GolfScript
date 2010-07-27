@@ -1,0 +1,10 @@
+<TestCase>
+<!-- http://stackoverflow.com/questions/3324301/code-golf-digital-clock/3324875#3324875 -->
+<code>{.{48-"9z9k&gt;99k99zX{:lSRRqSSxS{Rl?:SqS:x""}\5"{base}/33/0=3/=2+{"._ |"=}%}%n+\0):0;}3*;++{' 
+'/n*}99*);</code>
+<Inputs>
+<input>19:27</input>
+<input>11:11</input>
+<input>01:23:45:67:89</input>
+</Inputs>
+</TestCase>

@@ -4,7 +4,7 @@ Language::GolfScript - Perl implementation of GolfScript
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =head1 SYNOPSIS
 
@@ -49,7 +49,7 @@ It includes the C<G> package, which simply wraps a source
 filter around C<Language::GolfScript> and allows a GolfScript
 source file to be executed from the command line.
 
-The current implementation is ~1800 lines and is still missing
+The current implementation is ~2100 lines and is still missing
 a few features. But I'm going to see if I can get it even lower! ;-)
 
 =head1 FUNCTIONS

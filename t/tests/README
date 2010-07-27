@@ -1,0 +1,11 @@
+Tests for the  t/ruby-compare.tt  suite of tests.
+
+To use these tests you need 
+
+  1a) The  ruby  interpreter in your path
+  1b) so set the  RUBY_EXE  environment variable to the ruby interpreter
+
+  2) To set the  GOLFSCRIPT_RB  environment variable
+     to the ruby GolfScript interpreter script
+     (available from  http://www.golfscript.com/golfscript/golfscript.rb)
+

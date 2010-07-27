@@ -1,0 +1,9 @@
+<TestCase>
+<!-- http://stackoverflow.com/questions/3190914/code-golf-pig-latin/3191312#3191312 -->
+<code>)](' '/{1/(."AEIOUaeiou"-!{\119}*"ay "}%));+\+</code>
+<Inputs>
+<input>hilarious</input>
+<input>hello, world</input>
+<input>I am a G E light bulb.</input>
+</Inputs>
+</TestCase>

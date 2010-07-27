@@ -1,0 +1,9 @@
+<TestCase>
+<!-- http://stackoverflow.com/questions/2202897/code-golf-piano/2205184#2205184 -->
+<code>' ':s/~~5*\(7&amp;5*\,.4*@+):k;+):c;9,{5&lt;'#'9**' | '4*+3/4&lt;.1&gt;+c*s.+*k&gt;c&lt;n+}%)s/'_'*</code>
+<Inputs>
+<input>C 14</input>
+<input>D# 1</input>
+<input>A 7</input>
+</Inputs>
+</TestCase>
