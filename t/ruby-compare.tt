@@ -17,19 +17,20 @@ use vars qw($ruby $golfscript_rb);
 # those files.
 #
 
+my $ntests = 9;
 
 $ruby = find_ruby_interpreter();
 $golfscript_rb = find_ruby_golfscript_interpreter();
 if (!defined($ruby) || !defined($golfscript_rb)) {
   if (!defined $ruby) {
   SKIP: {
-      skip "Can't find ruby interpreter. Set RUBY_EXE env var.", 6;
+      skip "Can't find ruby interpreter. Set RUBY_EXE env var.", $ntests;
     }
     exit 0;
   }
   if (!defined $golfscript_rb) {
   SKIP: {
-      skip "Can't find golfscript.rb. Set GOLFSCRIPT_RB env var.", 6;
+      skip "Can't find golfscript.rb. Set GOLFSCRIPT_RB env var.", $ntests;
     }
     exit 0;
   }
@@ -38,6 +39,11 @@ if (!defined($ruby) || !defined($golfscript_rb)) {
 
 # most test cases come from stackoverflow.com
 # code-golf contents.
+
+if (@ARGV) {
+  &run_test_case($_) foreach @ARGV;
+  exit 0;
+}
 
 &run_test_case("t/tests/diamondblackjack.xml");
 &run_test_case("t/tests/pi1000.xml");
@@ -79,18 +85,19 @@ sub run_test_case {
     my $perl_output = qx($^X -Iblib/lib -MCarp::Always -MG=timeout,60 test.gs < test.input);
     my $ruby_output = qx($ruby $golfscript_rb test.gs < test.input);
 
-    if ($ENV{DEBUG}) {
-      if ($perl_output eq $ruby_output) {
+    if ($perl_output eq $ruby_output) {
+      if ($ENV{DEBUG}) {
 	print "$test_case: success for input $input\n";
 	print "Output:\n$perl_output\n\n";
-      } else {
-	print "$test_case: failure for input $input\n";
+      }
+    } else {
+      print "$test_case: failure for input $input\n";
+      if ($ENV{DEBUG}) {
 	print "Perl output:\n$perl_output\n\n";
 	print "Ruby output:\n$ruby_output\n\n";
-	$ok = 0;
       }
+      $ok = 0;
     }
-
     unlink "test.pl.out", "test.rb.out", "test.input";
   }
   unlink "test.gs";
@@ -121,6 +128,9 @@ sub find_ruby_interpreter {
 sub find_ruby_golfscript_interpreter {
   if (defined $ENV{GOLFSCRIPT_RB}) {
     return $ENV{GOLFSCRIPT_RB};
+  }
+  if (-f "./golfscript.rb") {
+    return "./golfscript.rb";
   }
   return;
 }

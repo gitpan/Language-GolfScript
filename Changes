@@ -1,19 +1,24 @@
 Revision history for Language-GolfScript
 
-0.01    2010-07-12
-        First version, released on an unsuspecting world.
+0.01	2010-07-12
+	First version, released on an unsuspecting world.
 
-0.02    2010-07-14 - install fix release
-        Trap error for systems that don't support 'use bigint try=> ...'.
+0.02	2010-07-14 - install fix release
+	Trap error for systems that don't support 'use bigint try=> ...'.
 	Bug fixes for nested blocks. Implemented a few more unimplemented
-        functions.
+	functions.
 
-0.03    2010-07-26 - bug fix release
-        Fix mix-up of increment and decrement operations ('(', ')').
-        Fix bug in map (%), each (/) operators. 
-        Fix bug in sort ($) operator.
-        Handle string-number-index(%) operation.
+0.03	2010-07-26 - bug fix release
+	Fix mix-up of increment and decrement operations ('(', ')').
+	Fix bug in map (%), each (/) operators. 
+	Fix bug in sort ($) operator.
+	Handle string-number-index(%) operation.
 	Handle string-uncons('(') operation.
-        More tests, including t/ruby-compare.tt to explicitly compare 
-        output of ruby/perl implementations.
+	More tests, including t/ruby-compare.tt to explicitly compare 
+	output of ruby/perl implementations.
 
+0.04	2010-08-04
+	Refactor ? operator, first operator to make use of __order function.
+	Refactor gsoutput() function to behave like Ruby impl.
+	Added command-line behavior for GolfScript.pm.
+	Enhanced code length counting function.

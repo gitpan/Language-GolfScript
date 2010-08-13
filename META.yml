@@ -1,23 +1,17 @@
 --- #YAML:1.0
-name:               Language-GolfScript
-version:            0.03
-abstract:           Perl implementation of GolfScript 
-author:
+name:                Language-GolfScript
+version:             0.04
+abstract:            Perl implementation of GolfScript 
+license:             perl
+author:              
     - Marty O'Brien <mob@cpan.org>
-license:            perl
-distribution_type:  module
-configure_requires:
-    ExtUtils::MakeMaker:  0
-build_requires:
-    ExtUtils::MakeMaker:  0
-requires:
-    Filter::Simple:  0.79
-    Test::More:      0
-no_index:
-    directory:
-        - t
-        - inc
-generated_by:       ExtUtils::MakeMaker version 6.55_02
+generated_by:        ExtUtils::MakeMaker version 6.44
+distribution_type:   module
+requires:     
+    File::Slurp:                   9999
+    Filter::Simple:                0.79
+    Math::BigInt:                  1.87
+    Test::More:                    0
 meta-spec:
-    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
-    version:  1.4
+    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
+    version: 1.3

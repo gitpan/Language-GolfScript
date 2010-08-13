@@ -4,7 +4,7 @@ Language::GolfScript - Perl implementation of GolfScript
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =head1 SYNOPSIS
 
@@ -139,6 +139,14 @@ C<count> to the module's import function, for example like
 
     use Language::GolfScript 'count'
     $ perl -MG=debug,count myscript.gs
+
+The code length count function attempts to remove comments
+and whitespace that "looks" unnecessary. If any tokens were
+removed from the code for the counting function, the function
+will also display the "stripped" code. In this way, you may
+develop a script that includes comments and commented-out
+sections of code, and get a string of code where most of
+the unnecessary characters have already been removed.
 
 =item C<Language::GolfScript::TIMEOUT>
 

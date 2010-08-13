@@ -3,6 +3,7 @@
 # Math::BigInt works well enough but 
 # I thought I might roll my own someday.
 
+sub bigi::new { Math::BigInt->new($_[0]) }
 sub bigi::add { $_[0] + $_[1] }
 sub bigi::mult { $_[0] * $_[1] }
 sub bigi::sub { $_[0] - $_[1] }
@@ -14,10 +15,14 @@ sub bigi::bitwise_xor { $_[0] ^ $_[1] }
 sub bigi::neg { $_[0] * -1 }
 sub bigi::pow { $_[0] ** $_[1] }
 sub bigi::cmp { $_[0] <=> $_[1] }
+sub bigi::to_scalar { 0+"$_[0]" }
 
+require Math::BigInt;
+eval {
+  Math::BigInt->import('try','GMP');
+};
 
-use Math::BigInt try => 'GMP';
-
+#############################################################################
 
 package Language::GolfScript;
 
@@ -26,13 +31,15 @@ use Time::HiRes;
 use warnings;
 use strict;
 use vars qw(@STACK @LB %DISPATCH);
+$| = 1;
 
-our $VERSION = 0.03;
+our $VERSION = 0.04;
 our $DEBUG = $ENV{G_DEBUG} || 0;
 our $INPUT = '__NOT_INITIALIZED__';
 our $COUNT = 0;
 our $TEST_OUTPUT;
 our $TIMEOUT = 1800;
+our %DISPATCH;
 
 sub import {
   if ("@_" =~ /debug/i) {
@@ -48,6 +55,29 @@ sub import {
     $TIMEOUT = $1;
   }
 }
+
+# command-line mode: first argument is GolfScript file.
+# Other args are inputs to run against the GolfScript code.
+unless (caller) {
+  my ($source) = shift @ARGV;
+  my $code;
+  use File::Slurp;
+  if ($source =~ s/^code://) {
+    $code = $source;
+  } else {
+    $code = File::Slurp::slurp($source);
+  }
+  if (@ARGV) {
+    foreach my $input_file (@ARGV) {
+      $INPUT = File::Slurp::slurp($input_file);
+      run($code);
+    }
+  } else {
+    $INPUT = '';
+    run($code);
+  }
+}
+
 
 ##################################################################
 
@@ -107,6 +137,7 @@ sub gspush {
     push @STACK, $_;
   }
   display_stack() if $DEBUG>1;
+  return;
 }
 
 sub gspop {
@@ -114,6 +145,9 @@ sub gspop {
   for (my $i=$#LB; $i>=0; $i--) {
     last if $LB[$i] < $sz;
     $LB[$i]--;
+    if ($DEBUG>1) {
+      print STDERR "!\$LB[$i] reduced to $LB[$i]\n";
+    }
   }
 
   if ($sz > 0) {
@@ -146,6 +180,45 @@ sub gscroak {
   } else {
     croak @_;
   }
+}
+
+# estimate character count of GolfScript code snippet,
+# after removing comments and whitespace that looks unnecessary
+sub _code_length {
+  my $code = shift;
+  my $stripped = '';
+  my @tokens = tokenize($code);
+
+  while (defined (my $token = shift @tokens)) {
+
+    if ($token =~ /^\#/) {
+      while (@tokens) {
+	my $next_token = shift @tokens;
+	last if substr($next_token,-1) eq "\n";
+      }
+      # after a comment, strip leading whitespace on next line
+      while (@tokens && $tokens[0] !~ /\S/) {
+	shift @tokens;
+      }
+      next;
+    }
+
+    if ($token !~ /\S/) {
+      # remove whitespace before a comment
+      $token .= shift @tokens  while @tokens && $tokens[0] !~ /\S/;
+      next if @tokens && $tokens[0] =~ /^\#/;
+    }
+
+    $stripped .= $token;
+  }
+  if (length($stripped) < length($code)) {
+
+    print STDERR "-----------------------------\n";
+    print STDERR "stripped code:\n\n";
+    print STDERR $stripped, "\n---------------------------------\n";
+
+  }
+  return length($stripped);
 }
 
 sub ___ {
@@ -181,58 +254,60 @@ sub display_stack {
   print STDERR "\n";
 }
 
-our %DISPATCH = 
-(
- '~' => \&tilde_operator,
- '`' => \&backquote_operator,
- '!' => \&exclamation_operator,
- '@' => \&at_operator,
- "\$" => \&dollar_operator,
- '+' => \&plus_operator,
- '-' => \&minus_operator,
- '*' => \&star_operator,
- '/' => \&slash_operator,
- '%' => \&percent_operator,
- '|' => \&pipe_operator,
- '&' => \&ampersand_operator,
- '^' => \&caret_operator,
- '\\' => \&backslash_operator,
- ';' => sub { gspop() },
- '<' => \&less_than_operator,
- '>' => \&greater_than_operator,
- '=' => \&equal_operator,
- ',' => \&comma_operator,
- '.' => \&dot_operator,
- '?' => \&question_operator,
- '(' => \&open_paren_operator,
- ')' => \&close_paren_operator,
- '[' => sub { 
-   my $sz = @STACK; 
-   if ($DEBUG) { print STDERR "        Open bracket sz=$sz\n"; }
-   push @LB, $sz 
- },
- ']' => sub { 
-   my $sz = pop @LB || 0; 
-   my @c = gssplice $sz;
-   if ($DEBUG) { print STDERR "        Close bracket [ @c ]\n"; }
-   gspush [ @c ] 
- },
- 'and' => sub { evaluate('1$if') },
- 'or' => sub { evaluate('1$\\if') },
- 'xor' => \&xor_function, 
- 'if' => \&if_function,
- 'print' => \&print_function,
- 'p' => sub { evaluate('`puts') },
- 'n' => sub { evaluate('"\n"') },
- 'puts' => sub { evaluate("print n print") },
- 'rand' => \&rand_function,
- 'do' => \&do_function, 
- 'while' => \&while_function,
- 'until' => \&until_function,
- 'abs' => \&abs_function,          # should be a way to express this in GS.
- 'zip' => \&zip_function,
- 'base' => \&base_function,
+sub _init_builtins {
+  %DISPATCH = 
+    (
+     '~' => \&tilde_operator,
+     '`' => \&backquote_operator,
+     '!' => \&exclamation_operator,
+     '@' => \&at_operator,
+     "\$" => \&dollar_operator,
+     '+' => \&plus_operator,
+     '-' => \&minus_operator,
+     '*' => \&star_operator,
+     '/' => \&slash_operator,
+     '%' => \&percent_operator,
+     '|' => \&pipe_operator,
+     '&' => \&ampersand_operator,
+     '^' => \&caret_operator,
+     '\\' => \&backslash_operator,
+     ';' => sub { gspop() },
+     '<' => \&less_than_operator,
+     '>' => \&greater_than_operator,
+     '=' => \&equal_operator,
+     ',' => \&comma_operator,
+     '.' => \&dot_operator,
+     '?' => \&question_operator,
+     '(' => \&open_paren_operator,
+     ')' => \&close_paren_operator,
+     '[' => sub { 
+       my $sz = @STACK; 
+       if ($DEBUG) { print STDERR "        Open bracket sz=$sz\n"; }
+       push @LB, $sz 
+     },
+     ']' => sub { 
+       my $sz = pop @LB || 0; 
+       my @c = gssplice $sz;
+       if ($DEBUG) { print STDERR "        Close bracket sz0=$sz [ @c ]\n"; }
+       gspush [ @c ] 
+     },
+     'and' => sub { evaluate('1$if') },
+     'or' => sub { evaluate('1$\\if') },
+     'xor' => \&xor_function, 
+     'if' => \&if_function,
+     'print' => \&print_function,
+     'p' => sub { evaluate('`puts') },
+     'n' => sub { evaluate('"\n"') },
+     'puts' => sub { evaluate("print n print") },
+     'rand' => \&rand_function,
+     'do' => \&do_function, 
+     'while' => \&while_function,
+     'until' => \&until_function,
+     'abs' => \&abs_function,          # should be a way to express this in GS.
+     'zip' => \&zip_function,
+     'base' => \&base_function,
 );
+}
 
 # initialize $INPUT and @STACK
 sub _load_input_onto_stack {
@@ -253,6 +328,7 @@ sub test {
 
   local @STACK = ();
   local $INPUT = $optional_input || '';
+  _init_builtins();
 
   alarm $TIMEOUT if $TIMEOUT > 0;
   evaluate($code);
@@ -265,6 +341,7 @@ sub run {
   my $code = shift;
   my $mode = shift || 'normal';
   _load_input_onto_stack();
+  _init_builtins();
 
   if ($COUNT) {
     if ($Math::BigInt::VERSION) {
@@ -278,33 +355,25 @@ sub run {
   alarm $TIMEOUT if $TIMEOUT > 0;
   evaluate($code);
   alarm 0;
+  my @output = @STACK;
   if ($mode eq 'test') {
-    my @output = @STACK;
     return @output;
   }
   gsoutput();
-  print STDOUT "\n";
 
   if ($COUNT) {
     my $elapsed_time = Time::HiRes::gettimeofday() - $start_time;
-    print "Character count: ", length($code), "\n";
+    print "Character count: ", _code_length($code), "\n";
     printf "Run time: %.3fs\n", $elapsed_time;
   }
 }
 
 # called at end of program. Outputs stack to STDOUT.
 sub gsoutput {
-  foreach my $elem (@STACK) {
-    if (is_array($elem)) {
-      local @STACK = @$elem;
-      &gsoutput;
-    } elsif (is_string($elem)) {
-      print STDOUT get_string($elem);
-    } elsif (is_block($elem)) {
-      print STDOUT "{" . get_block($elem) . "}";
-    } else {
-      print STDOUT get_number($elem);
-    }
+  my @output = @STACK;
+  {
+    local @STACK = ( to_array(\@output) );
+    evaluate("puts");
   }
 }
 
@@ -317,14 +386,16 @@ sub evaluate {
 
   my @tokens = tokenize($input);
   while (defined (my $token = shift @tokens)) {
-    print STDERR "    Parsing: \"$token\"\n" if $DEBUG;
+    if ($DEBUG && (0 || $DEBUG>2 || $token =~ /\S/)) {
+      print STDERR "    Parsing: \"$token\"\n";
+    }
     if ($token eq '#') {      # comment
       my $comment = $token;
       do {
 	my $token2 = shift @tokens;
 	$comment .= $token2;
       } while (@tokens > 0 && substr($comment,-1) ne "\n");
-      if ($DEBUG) {
+      if ($DEBUG && $comment !~ /^#;/) {
 	chomp $comment;
 	print STDERR "    Comment:  $comment\n";
       }
@@ -522,11 +593,14 @@ sub exclamation_operator {
 }
 
 sub at_operator {             # ROTATE3
+  my $d = $DEBUG;
+  $DEBUG = 0;
   my $a = gspop(); 
   my $b = gspop(); 
   my $c = gspop();
   gspush $b;
   gspush $a;
+  $DEBUG = $d;
   gspush $c;
 }
 
@@ -866,14 +940,23 @@ sub percent_operator {
     if (is_array($b)) {
       my @elems = @$b;
       my @c = ();
+
       foreach my $elem (@elems) {
 	my $lb = scalar @STACK;
 	gspush $elem;
 	evaluate($block);
-	# push @c, splice @STACK, $lb;
-	push @c, gssplice $lb;
+	my @result = gssplice $lb;
+
+	if ($DEBUG > 1) {
+	  print STDERR "    map(%) operation. Block {$block}, element ", 
+	    display_element($elem), " ==> ";
+	  print STDERR " ", display_element($_) foreach @result;
+	  print STDERR "\n";
+	}
+
+	push @c, @result;
       }
-      if ($is_string) {
+      if (0 && $is_string) {
 	gspush to_string( _coerce_array_to_string(\@c) );
       } else {
 	gspush [ @c ];
@@ -1175,42 +1258,62 @@ sub dot_operator {
 
 sub question_operator {
   my $a = gspop();
-  if (is_array($a)) {        # FIND IN ARRAY
-    my $b = gspop();
-    my $found = -1;
-    for (my $i=0; $i<@$a; $i++) {
-      if ($a->[$i] eq $b) { # XXX - may need to be cuter than this
-	$found = $i;
-	last;
-      }
-    }
-    gspush to_number($found);
-  } elsif (is_string($a)) {         # FIND IN STRING
-    my $b = gspop();
-    &___
-  } elsif (is_block($a)) {         # FIND CONDITION
-    $a = get_block($a);
-    my $b = gspop();
-    if (is_string($b)) {
-      $b = _coerce_string_to_array( get_string($b) );
-    } elsif (!is_array($b)) {
-      $b = [ $b ];
-    }
+  my $b = gspop();
+  __order($a,$b);
 
-    my $found = undef;
-    for (my $i = 0; $i < @$b; $i++) {
-      local @STACK = ($b->[$i]);
-      evaluate($a);
-      my $d = gspop();
-      if (is_true($d)) {
-	$found = $b->[$i];
-	last;
-      }
+  if (is_block($a) && is_block($b)) {
+    ($a,$b) = ($b,$a);
+    $b = to_string( get_block($b) );
+  }
+  if (is_string($a)) {
+    $a = [ _coerce_string_to_array(get_string($a)) ];
+  }
+
+  if (is_block($a)) {                           # FIND ELEMENT THAT SATISFIES CONDITION
+    my $block = get_block($a);
+    my $is_string = 0;
+    if (is_string($b)) {
+      $b = [ _coerce_string_to_array(get_string($b)) ];
+      $is_string = 1;
     }
-    gspush $found  if defined $found;
-    return; # do nothing to stack ...
-  } elsif (is_number($a)) {                        # EXPONENT
-    my $b = gspop();
+    if (is_array($b)) {
+      my $found = undef;
+      for (my $i=0; $i < @$b; $i++) {
+	local @STACK = ($b->[$i]);
+	evaluate($block);
+	my $d = gspop();
+	if (is_true($d)) {
+	  $found = $b->[$i];
+	  last;
+	}
+      }
+      if (defined $found) {
+	gspush $found;
+      } # else do nothing to stack
+      return;
+    } elsif (is_number($b)) {
+      gscroak "in `question': undefined method `find' for ", 
+	get_number($b), ":Fixnum (NoMethodError)\n";
+    }
+  } elsif (is_array($a)) {                       # FIND ELEMENT IN ARRAY
+    if (is_string($b)) {
+      # XXX - array-string-? always returns -1 ?
+      gspush to_number(-1);
+    } elsif (is_array($b)) {
+      # XXX - array-array-? always returns -1 ?
+      gspush to_number(-1);
+    } elsif (is_number($b)) {
+      my @c = @$a;
+      my $found = -1;
+      for (my $i=0; $i<@c; $i++) {
+	if (_element_compare($c[$i], $b) == 0) {
+	  $found = $i;
+	  last;
+	}
+      }
+      gspush to_number($found);
+    }
+  } elsif (is_number($a)) {                     # EXPONENT FUNCTION
     gspush to_number(bigi::pow(get_number($b),
 			       get_number($a)));
   }
@@ -1306,8 +1409,10 @@ sub if_function {
 sub print_function {
   my $a = gspop();
   if (is_array($a)) {
-    local @STACK = @$a;
-    &gsoutput;
+    foreach my $element (@$a) {
+      gspush $element;
+      print_function();
+    }
   } elsif (is_block($a)) {
     print STDOUT "$a}";
   } elsif (is_string($a)) {
@@ -1317,34 +1422,16 @@ sub print_function {
   }
 }
 
+our $rng_last = -1;
+our $RNG;
 sub rand_function {
   my $a = gspop();
   if (!is_number($a)) {
     &___yada;
   } else {
-    # once we have enabled big integers in the Perl module,
-    # rand() * $n  won't work like we expect. Some other
-    # machinations are needed.
 
-    my $n = get_number($a);
-    return 0 if bigi::cmp($n,1) <= 0;
-    my $r = $n;
-    while (bigi::cmp($r,$n) >= 0) {
-      my $p = $n;
-      $r = 0;
-      #print STDERR " rand -------------------------------\n";
-      while (bigi::cmp($p,0) > 0) {
-	$r = bigi::mult($r,2);
-
-	if (do { no bigint; rand() >= 0.5 }) {
-	  $r = bigi::add($r,1);
-	}
-	$p = bigi::div($p, 2);
-
-	#print STDERR " rand    \$p=$p, \$r=$r, \$n=$n\n";
-      }
-    }
-    gspush to_number($r);
+    my $n = bigi::to_scalar(get_number($a));
+    gspush to_number(int($n * rand()));
   }
 }
 
@@ -1406,7 +1493,8 @@ sub abs_function {
     &___;
   } else {
     $a = get_number($a);
-    if (bigi::cmp($a,0) < 0) {
+    #if (bigi::cmp($a,0) < 0) {
+    if ($a < 0) {
       gspush to_number(bigi::mult($a,-1));
     } else {
       gspush to_number($a);
@@ -1588,6 +1676,23 @@ sub _element_compare {
 
 ##################################################################
 
+our %GS_TYPE_PRIORITY = qw(number 1  array 2  string 3  block 4);
+
+# __order: swap arguments so that first arg's "priority" is
+# not lower than the second arg's 
+# Used by * / % < > = ? operators
+sub __order {
+  my ($type0, $type1) = (is($_[0]), is($_[1]));
+  if (($GS_TYPE_PRIORITY{$type0} || 0) < ($GS_TYPE_PRIORITY{$type1} || 0)) {
+    if ($DEBUG > 1) {
+      print STDERR "Reorder arguments\n";
+    }
+    ($_[0],$_[1]) = ($_[1],$_[0]);
+  }
+}
+
+# __coerce: coerce the two arguments to the 
+# Used by + - | & ^ operators
 sub __coerce {
 
   my ($type0, $type1) = (is($_[0]), is($_[1]));
@@ -1650,7 +1755,6 @@ sub _coerce_string_to_array {
   my @array = map { to_number(ord $_) } split //, $string;
   if ($DEBUG>1) { print STDERR " coercing string to array: $string => [ @array ]\n"; }
   return @array;
-  
 }
 
 # _coerce_array_to_string
@@ -1756,8 +1860,8 @@ sub _de_evaluate_string {
     my $char = shift @chars;
     if ($char eq "\n")    { $string .= "\\n" }
     elsif ($char eq "\t") { $string .= "\\t" }
-    elsif (ord($char) < 32) { $string .= sprintf "\\%03o", ord($char) }
-    elsif ($char =~ /['"]/) { $string .= "\\$char" }                    #']/){}
+    elsif (ord($char) < 32 || ord($char) >= 127) { $string .= sprintf "\\%03o", ord($char) }
+    elsif ($char =~ /['"\\]/) { $string .= "\\$char" }                    #']/){}
     else { $string .= $char }
   }
   return "\"$string\"";
@@ -2132,3 +2236,4 @@ use of "order"-style operations, too.
 Better documentation in this file on functions.
 
 Emulate nil type when we retrieve element from an empty stack?
+

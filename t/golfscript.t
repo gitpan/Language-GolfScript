@@ -1,11 +1,12 @@
 use Language::GolfScript;
-use Test::More tests => 190;
+use Test::More tests => 200;
 use strict;
 use warnings;
 use Carp;
 
-# test of the built-in functions. Make sure behavior matches all the
-# documentation in  http://www.golfscript.com/golfscript/builtins.html
+# test the GolfScript builtins in isolation.
+# Make sure behavior matches all of the documentation
+# in  http://www.golfscript.com/golfscript/builtins.html
 
 sub test {
   # evaluate some GolfScript code. Assert that the output matches
@@ -66,6 +67,7 @@ test("'0'!","0", "! not");
 test("1 2 3@","231", "\@ rot3");
 test("[1][2 3][4 5 6]@","[ 2 3 ][ 4 5 6 ][ 1 ]", "\@ rot3");
 test("7 8@","78", "\@ rot3/2");
+test("2 3 5 7 11 [\@]","23[ 7 11 5 ]", "\@ moves [ by 3");
 
 
 
@@ -84,6 +86,7 @@ test("['{block2}' {Block1} [123 80]]\$",
      '[ {Block1} [ 123 80 ] "{block2}" ]', "\$ sort mixed array");
 test("[5 6 9 14 4]{-1*}\$", "[ 14 9 6 5 4 ]", "\$ sort array by map");
 test("'ABCabc'{33^}\$", "\"acbACB\"", "\$ sort string by map"); 
+test('"foo"[0$]', "\"foo\"[ \"foo\" ]", "0\$ does not move [");
 
 
 
@@ -221,6 +224,7 @@ ok($@, "\" unparsable #{expression}");
 #   \\\
 test("1 2\\", "21", "\\ swap");
 test("[1 2 3]7\\","7[ 1 2 3 ]", "\\ swap");
+test("'a''b''c'[\\]", "\"a\"[ \"c\" \"b\" ]", "\\ moves [ by two");
 
 
 #   :::
@@ -284,6 +288,7 @@ test("10,{3%!},", "[ 0 3 6 9 ]", ", map block+array");
 test("'b'.", "\"b\"\"b\"", ". duplicate");
 test("{7.*}.", "{7.*}{7.*}", ". duplicate block");
 test("['foo' 'bar'].","[ \"foo\" \"bar\" ][ \"foo\" \"bar\" ]", ". dup array");
+test("'foo'[.]", "[ \"foo\" \"foo\" ]", ". moves ["); 
 
 
 
@@ -291,8 +296,11 @@ test("['foo' 'bar'].","[ \"foo\" \"bar\" ][ \"foo\" \"bar\" ]", ". dup array");
 test("2 8?", "256", "? exponentiation");
 test("5[4 3 5 1]?", "2", "? find in array");
 test("5[4 3 6 1]?", "-1", "? find in array not");
-test("[1 2 3 4 5 6]{.*20>}?", "5", "> find first condition");
+test("[1 2 3 4 5 6]{.*20>}?", "5", "? find first condition");
 test("[1 2 3 4 5 6]{2?20>}?", "5", "?? exponentiation,find first condition");
+test("[1 2 3][1 2]?", "-1", "? array-array ==> -1");
+test("'x''abcxyz'?", "-1", "? string-string ==> -1");
+test("120'abcxyz'?", "3", "? find in string");
 
 
 
@@ -337,9 +345,13 @@ my $min = 9E9;
 my $max = -9E9;
 for (my $i=0; $i<100; $i++) {
   my $output = Language::GolfScript::test("100rand");
-  $max = $output if $max < $output;
+  $max = $output 
+	if $max 
+	< 
+	$output;
   $min = $output if $min > $output;
 }
+# there is an infinitesimal chance of a false negative on this test
 ok($min < $max && $min >= 0 && $max <= 99, "rand 0<= $min < $max <=99");
 
 
@@ -356,6 +368,8 @@ test("5{.1-.}do", "543210", "do");
 test("0 'true' 'false' if", "\"false\"", "if false");
 test("'foo' 'true' 'false' if", "\"true\"", "if true");
 test("4 [] {1+} {1-} if", "3", "if block");
+test("'true'{[4 12+]}{4 12*}[if]", "[ [ 16 ] ]",
+     "if [ can move");
 
 
 #   abs
@@ -377,6 +391,13 @@ test("[1 1 0]3 base", "12", "base from array");
 test("17 2 base", "[ 1 0 0 0 1 ]", "base to array");
 
 
+
+#   [[[
+test("10 11 12 13 [ + - \\ ]", "[ -14 10 ]", "[ pops can move [");
+test("4,{0+}/[ 4,{1*}/ ]","0123[ 0 1 2 3 ]","[ elements inside [] form array");
+
+
 __END__
 
 
+# test needed  gspop past the loc of an open bracket

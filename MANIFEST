@@ -8,6 +8,7 @@ lib/G.pm
 t/00-load.t
 t/assign.t
 t/golfscript.t
+t/low.t
 t/unfold.t
 t/xor.t
 t/ruby-compare.tt
@@ -15,11 +16,13 @@ t/tests/README
 t/tests/4-is-magic.xml
 t/tests/diamondblackjack.xml
 t/tests/digitalclock.xml
+t/tests/lasers.xml
 t/tests/make-diamonds.xml
 t/tests/make-diamonds2.xml
 t/tests/pi1000.xml
 t/tests/piano.xml
 t/tests/piglatin.xml
+t/tests/sierpinski.xml
 t/tests/triforce.xml
 golfscripts/array.gs
 golfscripts/gcd.gs

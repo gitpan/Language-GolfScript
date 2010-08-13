@@ -14,6 +14,9 @@ WriteMakefile(
     PREREQ_PM => {
         'Test::More' => 0,
 	'Filter::Simple' => 0.79,
+        'File::Slurp' => 9999.0,
+	'Math::BigInt' => 1.87, 
+            # or whenever use Math::BigInt try=> is supported
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Language-GolfScript-*' },

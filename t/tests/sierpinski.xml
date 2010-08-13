@@ -1,0 +1,9 @@
+<TestCase>
+<!-- http://stackoverflow.com/questions/1726698/code-golf-sierpinskis-triangle/1727181#1727181 -->
+<code>' /\ /__\ '4/{).+: ;.{ \ ++}%\{.+}%+~ ]}@~(*n*</code>
+<Inputs>
+<input>2</input>
+<input>3</input>
+<input>5</input>
+</Inputs>
+</TestCase>
